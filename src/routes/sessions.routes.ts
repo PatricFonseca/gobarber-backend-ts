@@ -9,22 +9,18 @@ sessionsRouter.get('/', async (request, response) => {
 });
 
 sessionsRouter.post('/', async (request, response) => {
-  try {
-    const { email, password } = request.body;
+  const { email, password } = request.body;
 
-    const sessionUser = new CreateSessionUserService();
+  const sessionUser = new CreateSessionUserService();
 
-    const { user } = await sessionUser.execute({
-      email,
-      password,
-    });
+  const { user, token } = await sessionUser.execute({
+    email,
+    password,
+  });
 
-    delete user.password;
+  delete user.password;
 
-    return response.json({ user });
-  } catch (error) {
-    return response.status(400).json({ error: error.message });
-  }
+  return response.json({ user, token });
 });
 
 export default sessionsRouter;

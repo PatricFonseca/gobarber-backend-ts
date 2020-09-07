@@ -1,7 +1,10 @@
 import { getRepository } from 'typeorm';
-import CreateAppointmentService from './CreateAppointmentService';
-import User from '../models/User';
 import { compare } from 'bcryptjs';
+import { sign } from 'jsonwebtoken';
+
+import AppError from '../errors/AppError';
+import authConfig from '../config/auth';
+import User from '../models/User';
 
 interface SessionRequest {
   email: string;
@@ -10,6 +13,7 @@ interface SessionRequest {
 
 interface SessionResponse {
   user: User;
+  token: string;
 }
 class CreateSessionUserService {
   public async execute({
@@ -21,7 +25,7 @@ class CreateSessionUserService {
     const user = await usersRepository.findOne({ where: { email } });
 
     if (!user) {
-      throw new Error('Incorrect email/password combination.');
+      throw new AppError('Incorrect email/password combination.', 401);
     }
 
     //user.password - senha criptografada
@@ -30,11 +34,19 @@ class CreateSessionUserService {
     const passwordMatched = await compare(password, user.password);
 
     if (!passwordMatched) {
-      throw new Error('Incorrect email/password combination.');
+      throw new AppError('Incorrect email/password combination.', 401);
     }
+
+    const { secret, expiresIn } = authConfig.jwt;
+
+    const token = sign({}, secret, {
+      subject: user.id,
+      expiresIn,
+    });
 
     return {
       user,
+      token,
     };
   }
 }
